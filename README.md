@@ -1,5 +1,4 @@
 # uas_pemrograman_web_122140149 / Tubes
-### [Link Website](https://uas-pemrograman-web-122140149.vercel.app/)
 ---
 # Getting Started with Create React App
 
