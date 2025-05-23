@@ -61,6 +61,8 @@ Install semua dependensi Python dalam mode _editable_ (`-e`). Mode ini memungkin
 ``uv pip install -e ".[testing]"``
 
 **d. Jalankan Migrasi Database**
+Generate First revision 
+``alembic -c development.ini revision --autogenerate -m "membuat tabel database"``  
 Terapkan skema database terbaru menggunakan Alembic. Perintah ini akan membuat atau memperbarui tabel di database Anda sesuai dengan skrip migrasi.
 ``alembic upgrade head``
 
