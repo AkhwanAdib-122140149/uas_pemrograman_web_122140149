@@ -1,6 +1,6 @@
-Nama : Akhwan Adib Al Hakim
-NIM : 122140149
-Kelas : Pemrograman Web - RB
+Nama : Akhwan Adib Al Hakim  
+NIM : 122140149  
+Kelas : Pemrograman Web - RB  
 
 ## Proyek Pecel Lele - Panduan Instalasi dan Menjalankan
 
