@@ -71,5 +71,5 @@ Terapkan skema database terbaru menggunakan Alembic. Perintah ini akan membuat a
 
 **e. Jalankan Aplikasi Backend**
 Gunakan `pserve` untuk menjalankan server aplikasi Pyramid. Opsi `--reload` akan membuat server otomatis me-restart setiap kali ada perubahan pada file kode.
-``pserve development.ini --reload``
-Server backend sekarang berjalan dan siap menerima permintaan, biasanya pada `http://localhost:6543`
+``pserve development.ini --reload`` lihat pada browser atau POSTMAN `http://localhost:6543/api/menus`  
+Server backend sekarang berjalan dan siap menerima permintaan
