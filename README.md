@@ -65,7 +65,7 @@ buat database secara manual dengan ``psql -U 'postgres'`` / bisa ganti dengan us
 ketika sudah masusk postgre cli kemudian buat database baru ``"CREATE DATABASE pecellele_db;"`` dan masukkan dataset secara manual melalui post / di localhost:3000 (frontend)  
 Generate First revision 
 ``alembic -c development.ini revision --autogenerate -m "membuat tabel database"``  jangan lupa di development.ini ganti username postgresql dan passwordnya  
-``sqlalchemy.url = postgresql://"postgres:akhwan2309"@localhost:5432/pecellele_db`` ganti berdasarkan username::password  
+``sqlalchemy.url = postgresql://"postgres:akhwan2309"@localhost:5432/pecellele_db`` ganti berdasarkan username:password  
 Terapkan skema database terbaru menggunakan Alembic. Perintah ini akan membuat atau memperbarui tabel di database Anda sesuai dengan skrip migrasi.
 ``alembic upgrade head``
 
