@@ -54,8 +54,8 @@ function Home() {
       <section className="bg-white p-6 rounded shadow-md text-center">
         <h2 className="text-2xl font-bold text-green-700 mb-4">Kontak</h2>
         <p className="text-gray-800 mb-2">📍 Jl. Raya Warung Lele No. 123, Jakarta</p>
-        <p className="text-gray-800 mb-4">📞 <a href="https://wa.me/6280034567890" className="text-green-600 hover:underline">0800-3456-7890 (WhatsApp)</a></p>
-        <a href="https://wa.me/6281234567890?text=Halo%20saya%20ingin%20memesan%20menu" target="_blank" rel="noopener noreferrer">
+        <p className="text-gray-800 mb-4">📞 <a href="https://wa.me/6289514149157" className="text-green-600 hover:underline">0895-1414-9157 (WhatsApp)</a></p>
+        <a href="https://wa.me/6289514149157?text=Halo%20saya%20ingin%20memesan%20menu%20..." target="_blank" rel="noopener noreferrer">
           <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Pesan Sekarang via WhatsApp</button>
         </a>
       </section>

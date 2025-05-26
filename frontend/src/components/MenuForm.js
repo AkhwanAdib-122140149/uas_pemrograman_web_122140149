@@ -1,5 +1,3 @@
-// /uaspemweb/src/components/MenuForm.js
-
 import React, { useState, useEffect } from 'react';
 
 function MenuForm({ onSubmit, initialData = {} }) {
