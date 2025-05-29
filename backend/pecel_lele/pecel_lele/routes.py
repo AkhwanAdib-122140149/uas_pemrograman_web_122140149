@@ -2,7 +2,7 @@
 
 def includeme(config):
     # API routes
-    config.add_route('api_home', '/api') # Tetap [cite: 3]
+    config.add_route('api_home', '/api')
 
     # Route untuk koleksi menu (GET list, POST create)
     config.add_route('api_menus_collection', '/api/menus')
@@ -10,11 +10,9 @@ def includeme(config):
     # Route untuk item menu individual (GET one, PUT update, DELETE delete)
     config.add_route('api_menu_item', '/api/menus/{id}')
     
+    # Route baru untuk login admin <-- TAMBAHKAN BARIS INI
+    config.add_route('admin_login', '/api/admin/login')
+    
     # Web routes (jika masih digunakan, biarkan atau sesuaikan)
-    config.add_route('get_menus_web', '/menus') # [cite: 3]
-    config.add_route('add_menu_web', '/menus/add') # [cite: 3]
-
-    # Hapus atau komentari route lama yang mungkin konflik jika ada
-    # config.add_route('get_menus_api', '/api/menus') # Digantikan oleh api_menus_collection
-    # config.add_route('add_menu_api', '/api/menus/add') # Digantikan oleh api_menus_collection
-    # config.add_route('get_menu_api', '/api/menus/{id}') # Digantikan oleh api_menu_item
+    config.add_route('get_menus_web', '/menus')
+    config.add_route('add_menu_web', '/menus/add')

@@ -1,48 +1,33 @@
-import argparse
+# backend/pecel_lele/pecel_lele/scripts/initialize_db.py
+
+import os
 import sys
-
-from pyramid.paster import bootstrap, setup_logging
-from sqlalchemy.exc import OperationalError
-
-from .. import models
-
-
-def setup_models(dbsession):
-    """
-    Add or update models / fixtures in the database.
-
-    """
-    model = models.mymodel.MyModel(name='one', value=1)
-    dbsession.add(model)
-
-
-def parse_args(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        'config_uri',
-        help='Configuration file, e.g., development.ini',
-    )
-    return parser.parse_args(argv[1:])
-
+from pyramid.paster import get_appsettings, setup_logging
+from pyramid.scripts.common import parse_vars
+from alembic.config import Config
+from alembic import command
+from ..models.meta import Base
+from ..models import get_engine
 
 def main(argv=sys.argv):
-    args = parse_args(argv)
-    setup_logging(args.config_uri)
-    env = bootstrap(args.config_uri)
+    if len(argv) < 2:
+        sys.exit(
+            'Usage: %s <config_uri> [var=value]\n'
+            '(example: "%s development.ini")' % (argv[0], argv[0])
+        )
+    config_uri = argv[1]
+    options = parse_vars(argv[2:])
+    setup_logging(config_uri)
+    settings = get_appsettings(config_uri, options=options)
+    engine = get_engine(settings)
 
-    try:
-        with env['request'].tm:
-            dbsession = env['request'].dbsession
-            setup_models(dbsession)
-    except OperationalError:
-        print('''
-Pyramid is having a problem using your SQL database.  The problem
-might be caused by one of the following things:
+    # 1. Buat semua tabel berdasarkan model yang ada (Menu, AdminUser)
+    print("Creating database tables...")
+    Base.metadata.create_all(engine)
+    print("Tables created successfully.")
 
-1.  You may need to initialize your database tables with `alembic`.
-    Check your README.txt for description and try to run it.
-
-2.  Your database server may not be running.  Check that the
-    database server referred to by the "sqlalchemy.url" setting in
-    your "development.ini" file is running.
-            ''')
+    # 2. Tandai database dengan versi Alembic terbaru
+    print("Stamping database with Alembic head...")
+    alembic_cfg = Config(config_uri)
+    command.stamp(alembic_cfg, "head")
+    print("Database stamped successfully.")

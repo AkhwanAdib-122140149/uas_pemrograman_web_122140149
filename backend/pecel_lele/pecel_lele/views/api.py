@@ -1,31 +1,84 @@
 # /uaspemweb/backend/pecellele/pecellele/views/api.py
 
 from pyramid.view import view_config
-from pyramid.response import Response # Pastikan ini diimpor
-from sqlalchemy.exc import DBAPIError # Untuk error handling database
-import json # Untuk membuat response error manual
+from pyramid.response import Response
+from sqlalchemy.exc import DBAPIError, IntegrityError # <-- Tambahkan IntegrityError
+import json
 
-from pecel_lele.models import Menu # [cite: 17]
+# Impor yang diperlukan untuk login dan keamanan
+from pyramid.httpexceptions import HTTPUnauthorized, HTTPBadRequest # <-- TAMBAHKAN INI
+import jwt # <-- TAMBAHKAN INI
+import datetime # <-- TAMBAHKAN INI
+from ..models import Menu, AdminUser # <-- Tambahkan AdminUser
 
-@view_config(route_name='api_home', renderer='json') # [cite: 74]
+# Kunci rahasia untuk membuat token, GANTI DENGAN STRING ACAK YANG KUAT!
+JWT_SECRET_KEY = 'kunci-rahasia-anda-yang-sangat-aman-dan-panjang' # <-- TAMBAHKAN INI
+
+# --- FUNGSI KEAMANAN DAN LOGIN ---
+
+def verify_jwt_token(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        raise HTTPUnauthorized(json_body={'error': 'Authorization header missing or invalid'})
+
+    token = auth_header.split(' ')[1]
+    try:
+        # Gunakan secret key yang sama dengan saat membuat token
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPUnauthorized(json_body={'error': 'Token has expired'})
+    except jwt.InvalidTokenError:
+        raise HTTPUnauthorized(json_body={'error': 'Invalid token'})
+
+@view_config(route_name='admin_login', renderer='json', request_method='POST') # <-- TAMBAHKAN VIEW INI
+def admin_login_view(request):
+    try:
+        json_body = request.json_body
+        username = json_body.get('username')
+        password = json_body.get('password')
+    except ValueError:
+        return HTTPBadRequest(json_body={'error': 'Invalid JSON payload'})
+
+    if not username or not password:
+        return HTTPBadRequest(json_body={'error': 'Username and password are required'})
+
+    # Di sini kita menggunakan 'admins' sesuai nama tabel di database Anda
+    admin_user = request.dbsession.query(AdminUser).filter_by(username=username).first()
+
+    if admin_user and admin_user.check_password(password):
+        # Buat token JWT
+        payload = {
+            'user_id': admin_user.id,
+            'username': admin_user.username,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1) # Token berlaku 1 jam
+        }
+        token = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
+        return {'message': 'Login successful', 'token': token}
+    else:
+        return HTTPUnauthorized(json_body={'error': 'Invalid username or password'})
+
+# --- API ENDPOINTS UNTUK MENU ---
+
+@view_config(route_name='api_home', renderer='json')
 def api_home(request):
     return {
         'message': 'Welcome to Pecel Lele UMKM API',
         'endpoints': ['/api/menus', '/api/menus/{id}']
-    } # [cite: 74]
+    }
 
 @view_config(route_name='api_menus_collection', renderer='json', request_method='GET')
-def get_menus_collection_api(request): # Menggantikan get_menus_api lama
+def get_menus_collection_api(request):
     try:
         dbsession = request.dbsession
         menus = dbsession.query(Menu).all()
         return [
             {
                 'id': menu.id,
-                'name': menu.name, # [cite: 31]
-                'price': menu.price, # [cite: 31]
-                'description': menu.description, # [cite: 31]
-                'image_url': menu.image_url # [cite: 31]
+                'name': menu.name,
+                'price': menu.price,
+                'description': menu.description,
+                'image_url': menu.image_url
             }
             for menu in menus
         ]
@@ -35,49 +88,44 @@ def get_menus_collection_api(request): # Menggantikan get_menus_api lama
 @view_config(route_name='api_menus_collection', renderer='json', request_method='POST')
 def add_menu_collection_api(request):
     try:
+        verify_jwt_token(request) # <--- TAMBAHKAN INI UNTUK KEAMANAN
+    except HTTPUnauthorized as e:
+        return e
+        
+    try:
         data = request.json_body
         
-        # Validasi data dasar (contoh sederhana)
         if not data.get('name') or not data.get('price'):
             return Response(json.dumps({'error': 'Missing required fields: name and price'}),
                             content_type='application/json', status=400)
 
         menu = Menu(
             name=data['name'],
-            price=data['price'], #
+            price=data['price'],
             description=data.get('description', ''),
             image_url=data.get('image_url', '')
         )
-        request.dbsession.add(menu) #
-        request.dbsession.flush()   # Kirim ke DB, dapatkan ID, tapi belum commit transaksi
+        request.dbsession.add(menu)
+        request.dbsession.flush()
 
         return {
             'message': 'Menu added successfully',
             'menu': {
-                'id': menu.id,
-                'name': menu.name,
-                'price': menu.price,
-                'description': menu.description,
-                'image_url': menu.image_url
+                'id': menu.id, 'name': menu.name, 'price': menu.price,
+                'description': menu.description, 'image_url': menu.image_url
             }
         }
-    except IntegrityError as e: # Misal jika ada unique constraint yang dilanggar
-        request.dbsession.rollback() # Rollback sesi saat ini jika ada error integrity
+    except IntegrityError as e:
+        request.dbsession.rollback()
         return Response(json.dumps({'error': f'Integrity error: {e.orig}'}),
-                        content_type='application/json', status=409) # 409 Conflict
-    except DBAPIError as e: # Error database lainnya
-        # pyramid_tm akan otomatis rollback karena ada exception
+                        content_type='application/json', status=409)
+    except DBAPIError as e:
         return Response(json.dumps({'error': f'Database error: {e}'}),
                         content_type='application/json', status=500)
-    except KeyError as e: # Jika field wajib (name/price) tidak ada di json_body
+    except KeyError as e:
         return Response(json.dumps({'error': f'Missing field in JSON body: {str(e)}'}),
                         content_type='application/json', status=400)
-    except Exception as e: # Tangkap error umum lainnya
-        # pyramid_tm akan otomatis rollback
-        # Pertimbangkan untuk logging error ini
-        # import logging
-        # log = logging.getLogger(__name__)
-        # log.error(f"Unexpected error in add_menu_collection_api: {e}", exc_info=True)
+    except Exception as e:
         return Response(json.dumps({'error': f'An unexpected error occurred: {str(e)}'}),
                         content_type='application/json', status=500)
 
@@ -89,17 +137,19 @@ def get_menu_item_api(request):
         if not menu:
             return Response(json.dumps({'error': 'Menu not found'}), content_type='application/json', status=404)
         return {
-            'id': menu.id,
-            'name': menu.name,
-            'price': menu.price,
-            'description': menu.description,
-            'image_url': menu.image_url
+            'id': menu.id, 'name': menu.name, 'price': menu.price,
+            'description': menu.description, 'image_url': menu.image_url
         }
     except DBAPIError:
         return Response(json.dumps({'error': 'Database error while fetching menu item'}), content_type='application/json', status=500)
 
 @view_config(route_name='api_menu_item', renderer='json', request_method='PUT')
 def update_menu_item_api(request):
+    try:
+        verify_jwt_token(request) # <--- TAMBAHKAN INI UNTUK KEAMANAN
+    except HTTPUnauthorized as e:
+        return e
+        
     try:
         menu_id = request.matchdict['id']
         menu = request.dbsession.query(Menu).filter(Menu.id == menu_id).first()
@@ -108,33 +158,32 @@ def update_menu_item_api(request):
             return Response(json.dumps({'error': 'Menu not found'}), content_type='application/json', status=404)
 
         data = request.json_body
-        # Update field yang ada di data, biarkan yang lama jika tidak ada di data
         menu.name = data.get('name', menu.name)
         menu.price = data.get('price', menu.price)
         menu.description = data.get('description', menu.description)
         menu.image_url = data.get('image_url', menu.image_url)
         
-        # request.dbsession.add(menu) # Tidak perlu jika objek sudah di-track oleh session
-        request.dbsession.flush() # Memastikan perubahan tersimpan sebelum commit
+        request.dbsession.flush()
         return {'message': f'Menu {menu_id} updated successfully',
                 'menu': {
-                    'id': menu.id,
-                    'name': menu.name,
-                    'price': menu.price,
-                    'description': menu.description,
-                    'image_url': menu.image_url
+                    'id': menu.id, 'name': menu.name, 'price': menu.price,
+                    'description': menu.description, 'image_url': menu.image_url
                 }
                }
-    except KeyError as e: # Jika json_body tidak valid atau field salah
+    except KeyError as e:
         return Response(json.dumps({'error': f'Invalid data: {str(e)}'}), content_type='application/json', status=400)
     except DBAPIError:
         return Response(json.dumps({'error': 'Database error while updating menu'}), content_type='application/json', status=500)
     except Exception as e:
         return Response(json.dumps({'error': f'An unexpected error occurred: {str(e)}'}), content_type='application/json', status=500)
 
-# Opsional: Tambahkan view untuk DELETE jika Anda memerlukannya
 @view_config(route_name='api_menu_item', renderer='json', request_method='DELETE')
 def delete_menu_item_api(request):
+    try:
+        verify_jwt_token(request) # <--- TAMBAHKAN INI UNTUK KEAMANAN
+    except HTTPUnauthorized as e:
+        return e
+        
     try:
         menu_id = request.matchdict['id']
         menu = request.dbsession.query(Menu).filter(Menu.id == menu_id).first()
@@ -143,7 +192,7 @@ def delete_menu_item_api(request):
             return Response(json.dumps({'error': 'Menu not found'}), content_type='application/json', status=404)
 
         request.dbsession.delete(menu)
-        request.dbsession.flush() # Memastikan penghapusan tersimpan sebelum commit
+        request.dbsession.flush()
         return {'message': f'Menu {menu_id} deleted successfully'}
     except DBAPIError:
         return Response(json.dumps({'error': 'Database error while deleting menu'}), content_type='application/json', status=500)

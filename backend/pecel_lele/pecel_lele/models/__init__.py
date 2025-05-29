@@ -4,6 +4,7 @@ from sqlalchemy.orm import configure_mappers
 from .meta import Base
 from .menu import Menu
 import zope.sqlalchemy
+from .admin import AdminUser
 
 # Import or define all models here to ensure they are attached to the
 # ``Base.metadata`` prior to any initialization routines.
@@ -13,11 +14,10 @@ from .mymodel import MyModel  # flake8: noqa
 # all relationships can be setup.
 configure_mappers()
 
-__all__ = [Menu, Base]
+__all__ = [Menu, Base, MyModel, AdminUser]
 
 def get_engine(settings, prefix='sqlalchemy.'):
     return engine_from_config(settings, prefix)
-
 
 def get_session_factory(engine):
     factory = sessionmaker()
