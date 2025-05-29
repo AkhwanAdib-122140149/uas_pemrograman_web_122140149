@@ -62,11 +62,11 @@ Install semua dependensi Python dalam mode _editable_ (`-e`). Mode ini memungkin
 
 **d. Jalankan Migrasi Database**
 buat database secara manual dengan ``psql -U 'postgres'`` / bisa ganti dengan username lain sesuai postgre yang diinstall
-ketika sudah masusk postgre cli kemudian buat database baru ``"CREATE DATABASE pecellele_db;"`` dan masukkan dataset secara manual melalui post / di localhost:3000 (frontend)
-Generate First revision 
-``alembic -c development.ini revision --autogenerate -m "membuat tabel database"``  
-Terapkan skema database terbaru menggunakan Alembic. Perintah ini akan membuat atau memperbarui tabel di database Anda sesuai dengan skrip migrasi.
-``alembic upgrade head``
+ketika sudah masuk postgre cli kemudian buat database baru ``"CREATE DATABASE pecellele_db2;"`` dan masukkan dataset secara manual melalui post / di localhost:3000 (frontend)  
+Generate First revision  
+``initialize_pecel_lele_db development.ini``
+Buat Login Admin pada direktori pecel_lele dengan menjalankan  
+``python create_admin.py development.ini``
 
 **e. Jalankan Aplikasi Backend**
 Gunakan `pserve` untuk menjalankan server aplikasi Pyramid. Opsi `--reload` akan membuat server otomatis me-restart setiap kali ada perubahan pada file kode.
